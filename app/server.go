@@ -9,6 +9,44 @@ import (
 	"os"
 )
 
+type Server struct {
+	Listener   net.Listener
+	Connection net.Conn
+}
+
+func NewServer(l net.Listener) *Server {
+	return &Server{
+		Listener: l,
+	}
+}
+
+func (s *Server) Start() {
+	for {
+		c, err := s.Listener.Accept()
+		if err != nil {
+			fmt.Println("Error accepting connection: ", err.Error())
+			os.Exit(1)
+		}
+		s.Connection = c
+		defer s.Connection.Close()
+		data := make([]byte, 1024)
+		_, err = c.Read(data)
+		if err != nil {
+			fmt.Println("Error reading request: ", err.Error())
+			os.Exit(1)
+		}
+
+		httpRequest, err := ParseHTTPRequest(string(data))
+		if err != nil {
+			fmt.Println("Error parsing request: ", err.Error())
+			os.Exit(1)
+		}
+		resp := NewResponse(200, "")
+
+		s.handleRequest(httpRequest, resp)
+	}
+}
+
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
@@ -21,25 +59,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	c, err := l.Accept()
-	if err != nil {
-		fmt.Println("Error accepting connection: ", err.Error())
-		os.Exit(1)
-	}
-	data := make([]byte, 1024)
-	_, err = c.Read(data)
-	if err != nil {
-		fmt.Println("Error reading request: ", err.Error())
-		os.Exit(1)
-	}
+	s := NewServer(l)
+	s.Start()
+}
 
-	httpRequest, err := ParseHTTPRequest(string(data))
-	if err != nil {
-		fmt.Println("Error parsing request: ", err.Error())
-		os.Exit(1)
-	}
-	resp := NewResponse(200, "")
-
+func (s *Server) handleRequest(httpRequest *HTTPRequest, resp *Response) {
 	if httpRequest.RequestLine.Path == "/" {
 		resp.StatusCode = 200
 	} else if strings.Contains(httpRequest.RequestLine.Path, "/echo/") {
@@ -60,11 +84,9 @@ func main() {
 		resp.StatusCode = 404
 	}
 
-	_, err = c.Write([]byte(resp.String()))
+	_, err := s.Connection.Write([]byte(resp.String()))
 	if err != nil {
 		fmt.Println("Error writing response: ", err.Error())
 		os.Exit(1)
 	}
-
-	c.Close()
 }
