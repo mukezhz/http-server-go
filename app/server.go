@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	// Uncomment this block to pass the first stage
 	"net"
 	"os"
@@ -24,7 +25,25 @@ func main() {
 		fmt.Println("Error accepting connection: ", err.Error())
 		os.Exit(1)
 	}
-	_, err = c.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+	data := make([]byte, 1024)
+	_, err = c.Read(data)
+	if err != nil {
+		fmt.Println("Error reading request: ", err.Error())
+		os.Exit(1)
+	}
+
+	httpRequest, err := parseHTTPRequest(string(data))
+	if err != nil {
+		fmt.Println("Error parsing request: ", err.Error())
+		os.Exit(1)
+	}
+	resp := NewResponse(200, "")
+
+	if httpRequest.RequestLine.Path != "/" {
+		resp.StatusCode = 404
+	}
+
+	_, err = c.Write([]byte(resp.String()))
 	if err != nil {
 		fmt.Println("Error writing response: ", err.Error())
 		os.Exit(1)
