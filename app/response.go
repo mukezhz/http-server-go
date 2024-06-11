@@ -3,6 +3,7 @@ package main
 type Response struct {
 	StatusCode int
 	Body       string
+	Header     map[string]string
 }
 
 func NewResponse(statusCode int, body string) *Response {
@@ -13,8 +14,14 @@ func NewResponse(statusCode int, body string) *Response {
 }
 
 func (r *Response) String() string {
+	headers := ""
+	if len(r.Header) > 0 {
+		for k, v := range r.Header {
+			headers += k + ": " + v + "\r\n"
+		}
+	}
 	if r.StatusCode == 200 {
-		return okResponse() + r.Body
+		return "HTTP/1.1 200 OK\r\n" + headers + "\r\n" + r.Body
 	}
 	return notFoundResponse()
 }

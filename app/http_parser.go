@@ -23,6 +23,10 @@ type HTTPRequest struct {
 	Body        string
 }
 
+func (r *HTTPRequest) String() string {
+	return r.RequestLine.Method + " " + r.RequestLine.Path + " " + r.RequestLine.Version + "\r\n" + r.Body
+}
+
 func parseHTTPRequestLine(requestLine string) (*RequestLine, error) {
 	requestParts := strings.Split(requestLine, " ")
 	if len(requestParts) < 3 {
@@ -37,7 +41,7 @@ func parseHTTPRequestLine(requestLine string) (*RequestLine, error) {
 	return &rl, nil
 }
 
-func parseHTTPRequest(data string) (*HTTPRequest, error) {
+func ParseHTTPRequest(data string) (*HTTPRequest, error) {
 	requestData := strings.Split(string(data), "\r\n")
 	if len(requestData) < 1 {
 		return nil, ErrHTTPInvalidRequest
@@ -71,4 +75,15 @@ func parseHTTPRequest(data string) (*HTTPRequest, error) {
 	}
 	return &httpRequest, nil
 
+}
+
+func (r *HTTPRequest) getValueFromDynamicPath(dynamicPath string) string {
+	splittedPath := strings.Split(dynamicPath, "/")
+	actualSplittedPath := strings.Split(r.RequestLine.Path, "/")
+	for idx, path := range splittedPath {
+		if path == ":dynamic" {
+			return actualSplittedPath[idx]
+		}
+	}
+	return ""
 }
