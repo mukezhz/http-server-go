@@ -50,6 +50,12 @@ func main() {
 			"Content-Length": fmt.Sprintf("%d", len(value)),
 		}
 		resp.StatusCode = 200
+	} else if strings.Contains(httpRequest.RequestLine.Path, "/user-agent") {
+		resp.Body = httpRequest.Headers["user-agent"]
+		resp.Header = map[string]string{
+			"Content-Type":   "text/plain",
+			"Content-Length": fmt.Sprintf("%d", len(httpRequest.Headers["user-agent"])),
+		}
 	} else {
 		resp.StatusCode = 404
 	}

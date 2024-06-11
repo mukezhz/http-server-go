@@ -65,7 +65,7 @@ func ParseHTTPRequest(data string) (*HTTPRequest, error) {
 		if len(headerParts) < 2 {
 			return nil, ErrHTTPInvalidHeader
 		}
-		headers[headerParts[0]] = headerParts[1]
+		headers[strings.ToLower(headerParts[0])] = headerParts[1]
 	}
 
 	httpRequest := HTTPRequest{
