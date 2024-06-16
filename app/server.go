@@ -89,7 +89,7 @@ func (s *Server) handleRequest(httpRequest *HTTPRequest, resp *Response) {
 			resp.Body = string(content)
 			resp.Header = map[string]string{
 				"Content-Type":   "application/octet-stream",
-				"Content-Length": fmt.Sprintf("%d", len(content)),
+				"Content-Length": fmt.Sprintf("%d", len(content)+1),
 			}
 			resp.StatusCode = 200
 		}

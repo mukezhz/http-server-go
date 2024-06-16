@@ -20,9 +20,8 @@ func (r *Response) String() string {
 			headers += k + ": " + v + "\r\n"
 		}
 	}
-
 	if r.StatusCode == 200 {
-		return "HTTP/1.1 200 OK\r\n" + headers + "\r\n" + r.Body + "\r\n"
+		return okResponse() + headers + "\r\n" + r.Body + "\r\n"
 	}
 	return notFoundResponse()
 }
