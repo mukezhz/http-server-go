@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"strings"
 
@@ -20,36 +21,49 @@ func NewServer(l net.Listener) *Server {
 	}
 }
 
+func (s *Server) handleConnection() {
+	c, err := s.Listener.Accept()
+	if err != nil {
+		fmt.Println("Error accepting connection: ", err.Error())
+		os.Exit(1)
+	}
+	s.Connection = c
+	defer s.Connection.Close()
+	data := make([]byte, 1024)
+	_, err = c.Read(data)
+	if err != nil {
+		fmt.Println("Error reading request: ", err.Error())
+		os.Exit(1)
+	}
+
+	httpRequest, err := ParseHTTPRequest(string(data))
+	if err != nil {
+		fmt.Println("Error parsing request: ", err.Error())
+		os.Exit(1)
+	}
+	resp := NewResponse(200, "")
+	s.handleRequest(httpRequest, resp)
+}
+
 func (s *Server) Start() {
 	for {
-		c, err := s.Listener.Accept()
-		if err != nil {
-			fmt.Println("Error accepting connection: ", err.Error())
-			os.Exit(1)
-		}
-		s.Connection = c
-		defer s.Connection.Close()
-		data := make([]byte, 1024)
-		_, err = c.Read(data)
-		if err != nil {
-			fmt.Println("Error reading request: ", err.Error())
-			os.Exit(1)
-		}
-
-		httpRequest, err := ParseHTTPRequest(string(data))
-		if err != nil {
-			fmt.Println("Error parsing request: ", err.Error())
-			os.Exit(1)
-		}
-		resp := NewResponse(200, "")
-
-		s.handleRequest(httpRequest, resp)
+		s.handleConnection()
 	}
+}
+
+var assetsPath string
+
+func init() {
+	fmt.Println("Starting server...")
+	directory := flag.String("directory", ".", "Specify the directory to use")
+	flag.Parse()
+	assetsPath = *directory
+	fmt.Printf("Using directory: %s\n", *directory)
 }
 
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
-	fmt.Println("Logs from your program will appear here!")
+	fmt.Println("Logs from your program will appear here!", assetsPath)
 
 	// Uncomment this block to pass the first stage
 
@@ -65,6 +79,19 @@ func main() {
 
 func (s *Server) handleRequest(httpRequest *HTTPRequest, resp *Response) {
 	if httpRequest.RequestLine.Path == "/" {
+		resp.StatusCode = 200
+	} else if strings.Contains(httpRequest.RequestLine.Path, "/files/") {
+		value := httpRequest.getValueFromDynamicPath("/files/:dynamic")
+		content, err := os.ReadFile(assetsPath + value)
+		if err != nil {
+			resp.StatusCode = 404
+			return
+		}
+		resp.Body = string(content)
+		resp.Header = map[string]string{
+			"Content-Type":   "application/octet-stream",
+			"Content-Length": fmt.Sprintf("%d", len(content)),
+		}
 		resp.StatusCode = 200
 	} else if strings.Contains(httpRequest.RequestLine.Path, "/echo/") {
 		value := httpRequest.getValueFromDynamicPath("/echo/:dynamic")
