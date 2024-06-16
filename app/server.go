@@ -85,14 +85,14 @@ func (s *Server) handleRequest(httpRequest *HTTPRequest, resp *Response) {
 		content, err := os.ReadFile(assetsPath + value)
 		if err != nil {
 			resp.StatusCode = 404
-			return
+		} else {
+			resp.Body = string(content)
+			resp.Header = map[string]string{
+				"Content-Type":   "application/octet-stream",
+				"Content-Length": fmt.Sprintf("%d", len(content)),
+			}
+			resp.StatusCode = 200
 		}
-		resp.Body = string(content)
-		resp.Header = map[string]string{
-			"Content-Type":   "application/octet-stream",
-			"Content-Length": fmt.Sprintf("%d", len(content)),
-		}
-		resp.StatusCode = 200
 	} else if strings.Contains(httpRequest.RequestLine.Path, "/echo/") {
 		value := httpRequest.getValueFromDynamicPath("/echo/:dynamic")
 		resp.Body = value
