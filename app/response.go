@@ -21,13 +21,13 @@ func (r *Response) String() string {
 		}
 	}
 	if r.StatusCode == 200 {
-		return okResponse() + headers + "\r\n" + r.Body + "\r\n"
+		return okResponse() + headers + "\r\n" + r.Body
 	}
 	return notFoundResponse()
 }
 
 func okResponse() string {
-	return "HTTP/1.1 200 OK\r\n\r\n"
+	return "HTTP/1.1 200 OK\r\n"
 }
 
 func notFoundResponse() string {
